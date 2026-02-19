@@ -1,0 +1,35 @@
+
+{
+  "landing": {
+    "k12": {
+      "src": "https://picsum.photos/seed/k12/600/400",
+      "alt": "K12 Section",
+      "width": 600,
+      "height": 400,
+      "hint": "education classroom"
+    },
+    "skills": {
+      "src": "https://picsum.photos/seed/skills/600/400",
+      "alt": "Skill Up",
+      "width": 600,
+      "height": 400,
+      "hint": "professional development"
+    },
+    "exam": {
+      "src": "https://picsum.photos/seed/exam/600/400",
+      "alt": "Exam Service",
+      "width": 600,
+      "height": 400,
+      "hint": "test assessment"
+    }
+  },
+  "ielts": {
+    "writingTask1": {
+      "src": "https://picsum.photos/seed/chart/600/300",
+      "alt": "IELTS Writing Task 1 Chart",
+      "width": 600,
+      "height": 300,
+      "hint": "data chart"
+    }
+  }
+}
