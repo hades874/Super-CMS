@@ -67,6 +67,7 @@ export function parseClassData(rawText: string): ParsedClass[] {
     const row = rows[0];
 
     const programList = Array.from(programs).filter(Boolean);
+<<<<<<< HEAD
     
     // Parse time range
     const rawClassTime = getField(row, ['Class Time', 'ClassTime', 'class_time', 'Duration']);
@@ -88,16 +89,24 @@ export function parseClassData(rawText: string): ParsedClass[] {
     }
 
     const date = getField(row, ['Class Date', 'ClassDate', 'class_date', 'Date']);
+=======
+>>>>>>> 3e03957c286f7d74da8a86acd2437262309100ff
 
     parsed.push({
       id: `cls-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       classCode:        getField(row, ['Class Code', 'ClassCode', 'class_code']),
       month:            getField(row, ['Month', 'month']),
+<<<<<<< HEAD
       classDate:        date,
       classEndDate:     date, // Usually same day
       startTime:        startTime,
       endTime:          endTime,
       classTime:        rawClassTime,
+=======
+      classDate:        getField(row, ['Class Date', 'ClassDate', 'class_date', 'Date']),
+      startTime:        getField(row, ['Start Time', 'StartTime', 'start_time']),
+      classTime:        getField(row, ['Class Time', 'ClassTime', 'class_time', 'Duration']),
+>>>>>>> 3e03957c286f7d74da8a86acd2437262309100ff
       programs:         programList,
       course:           getField(row, ['Course', 'course']),
       subject:          getField(row, ['Subject', 'subject']),
@@ -107,12 +116,17 @@ export function parseClassData(rawText: string): ParsedClass[] {
       teacher2:         getField(row, ['Teacher 2/Doubt Solver 1', 'Teacher 2', 'Teacher2']),
       teacher3:         getField(row, ['Teacher 3/Doubt Solver 2', 'Teacher 3', 'Teacher3']),
       platform:         getField(row, ['Platform', 'platform']),
+<<<<<<< HEAD
       title:            getField(row, ['Title', 'title', 'Topic', 'topic']),
+=======
+      title:            getField(row, ['Title', 'title']),
+>>>>>>> 3e03957c286f7d74da8a86acd2437262309100ff
       caption:          getField(row, ['Caption', 'caption']),
       contentDeveloper: getField(row, ['Content Developer', 'ContentDeveloper', 'content_developer']),
       remarks:          getField(row, ['Remarks', 'remarks', 'Notes']),
       isMultiDirectional: programList.length > 1,
       createdAt:        new Date().toISOString(),
+<<<<<<< HEAD
       
       // Defaults for edit panel
       classType: 'Live',
@@ -126,6 +140,8 @@ export function parseClassData(rawText: string): ParsedClass[] {
         course: getField(row, ['Course', 'course']),
         subject: getField(row, ['Subject', 'subject']),
       }]
+=======
+>>>>>>> 3e03957c286f7d74da8a86acd2437262309100ff
     });
   });
 

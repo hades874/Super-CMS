@@ -65,7 +65,11 @@
     "@types/papaparse": "^5.3.14",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+<<<<<<< HEAD
     "eslint": "^10.0.2",
+=======
+    "eslint": "^4.1.1",
+>>>>>>> 3e03957c286f7d74da8a86acd2437262309100ff
     "eslint-config-next": "^0.2.4",
     "genkit-cli": "^1.14.1",
     "postcss": "^8",
