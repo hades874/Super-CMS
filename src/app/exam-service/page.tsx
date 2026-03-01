@@ -1,0 +1,29 @@
+
+'use client';
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Construction } from 'lucide-react';
+import Link from 'next/link';
+
+export default function AllContentPage() {
+  return (
+      <main className="flex-1 flex items-center justify-center p-4">
+        <Card className="w-full max-w-lg text-center">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-center gap-2">
+                <Construction className="h-8 w-8 text-primary" />
+                All Content
+            </CardTitle>
+             <CardDescription>This section is under construction.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>This page will host a unified view of all content across the platform.</p>
+             <Link href="/exam-creation">
+                <Button className="mt-4">Go to Exam Creation</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </main>
+  );
+}
