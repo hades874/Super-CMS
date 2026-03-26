@@ -45,7 +45,7 @@ export default function IeltsResultsPage() {
   const ieltsQuestionsBank = useMemo(() => {
     const combined = [...allQuestions, ...ieltsQuestionsRepo];
     // De-duplicate
-    const uniqueMap = new Map();
+    const uniqueMap = new Map<string, Question>();
     combined.forEach(q => uniqueMap.set(q.id, q));
     return Array.from(uniqueMap.values()).filter(q => {
         const subjects = Array.isArray(q.subject) ? q.subject : [String(q.subject)];

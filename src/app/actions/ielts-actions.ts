@@ -1,6 +1,8 @@
 
 'use server';
 
+export const maxDuration = 60; // seconds — allows AI/file processing time on Vercel
+
 import * as mammoth from 'mammoth';
 import { extractQuestionsFromFile } from '@/ai/flows/extract-questions-from-file';
 

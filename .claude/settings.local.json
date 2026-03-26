@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find c:/Users/farab/Documents/++work/Super-CMS -name *.test.* -o -name *.spec.*)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

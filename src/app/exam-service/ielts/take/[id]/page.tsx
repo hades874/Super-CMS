@@ -54,7 +54,7 @@ export default function IeltsExamPlayer() {
   const ieltsQuestionsBank = useMemo(() => {
     const combined = [...allQuestions, ...ieltsQuestionsRepo];
     // Remove duplicates by ID
-    const uniqueMap = new Map();
+    const uniqueMap = new Map<string, Question>();
     combined.forEach(q => uniqueMap.set(q.id, q));
     return Array.from(uniqueMap.values()).filter(q => {
         const subjects = Array.isArray(q.subject) ? q.subject : [String(q.subject)];
