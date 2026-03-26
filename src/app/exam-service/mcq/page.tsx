@@ -118,7 +118,7 @@ type ExamServiceConfig = {
   examType: string;
   accessType: string;
   vertical: string;
-  program: string;
+  programs: string[];
   subject: string;
   class: string;
   paper: string;
@@ -182,7 +182,7 @@ function defaultExam(): ExamServiceConfig {
     examType: 'MCQ Exam',
     accessType: 'Public',
     vertical: '',
-    program: '',
+    programs: [],
     subject: '',
     class: '',
     paper: '',
@@ -263,6 +263,92 @@ function SearchableSelect({
                   className="text-xs"
                 >
                   <Check className={`mr-2 h-3 w-3 ${value === opt ? 'opacity-100' : 'opacity-0'}`} />
+                  {opt}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ─── MultiSearchableSelect ────────────────────────────────────────────────────
+
+function MultiSearchableSelect({
+  values,
+  onChange,
+  options,
+  placeholder,
+}: {
+  values: string[];
+  onChange: (v: string[]) => void;
+  options: string[];
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const toggle = (opt: string) => {
+    onChange(
+      values.includes(opt) ? values.filter(v => v !== opt) : [...values, opt],
+    );
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="flex min-h-9 w-full items-start justify-between rounded-xl border border-input bg-background px-3 py-2 text-xs shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 gap-2"
+        >
+          <span className="flex flex-wrap gap-1 flex-1">
+            {values.length === 0 ? (
+              <span className="text-muted-foreground">{placeholder || 'Select...'}</span>
+            ) : (
+              values.map(v => (
+                <span
+                  key={v}
+                  className="inline-flex items-center gap-1 bg-primary/10 text-primary rounded-md px-2 py-0.5 text-[10px] font-bold"
+                >
+                  {v}
+                  <button
+                    type="button"
+                    onClick={e => { e.stopPropagation(); toggle(v); }}
+                    className="hover:text-destructive"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </span>
+              ))
+            )}
+          </span>
+          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50 mt-0.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search..." className="h-8 text-xs" />
+          <CommandList>
+            <CommandEmpty className="py-4 text-center text-[10px] text-muted-foreground">No results found.</CommandEmpty>
+            <CommandGroup>
+              {values.length > 0 && (
+                <CommandItem
+                  value="__clear__"
+                  onSelect={() => onChange([])}
+                  className="text-xs text-muted-foreground italic"
+                >
+                  <X className="mr-2 h-3 w-3" /> Clear all ({values.length})
+                </CommandItem>
+              )}
+              {options.map(opt => (
+                <CommandItem
+                  key={opt}
+                  value={opt}
+                  onSelect={() => toggle(opt)}
+                  className="text-xs"
+                >
+                  <Check className={`mr-2 h-3 w-3 ${values.includes(opt) ? 'opacity-100' : 'opacity-0'}`} />
                   {opt}
                 </CommandItem>
               ))}
@@ -633,12 +719,12 @@ export default function McqExamServicePage() {
                         />
                       </Field>
                     </div>
-                    <Field label="Program">
-                      <SearchableSelect
-                        value={activeExam.program}
-                        onChange={v => update({ program: v })}
+                    <Field label="Program" description="Select one or more programs to publish this exam to">
+                      <MultiSearchableSelect
+                        values={activeExam.programs}
+                        onChange={v => update({ programs: v })}
                         options={PROGRAMS}
-                        placeholder="Select program"
+                        placeholder="Select programs..."
                       />
                     </Field>
                   </>
