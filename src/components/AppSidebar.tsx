@@ -144,7 +144,7 @@ export default function AppSidebar() {
                     isActive={isActive(pathname, '/exam-service')}
                   >
                       <PenSquare className="h-4 w-4" />
-                      <span className="font-medium text-sm">Legacy Exam</span>
+                      <span className="font-medium text-sm">Exam Service</span>
                       <ChevronDown className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
