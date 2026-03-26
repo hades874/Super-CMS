@@ -52,7 +52,15 @@ const Question = ({ question, answer, onAnswerChange }: { question: QuestionType
 
 
 export function ReadingSection({ section, answers, onAnswerChangeAction }: ReadingSectionProps) {
-  const [activePassage, setActivePassage] = useState(section.passages[0]);
+  const [activePassage, setActivePassage] = useState(section.passages[0] ?? null);
+
+  if (!activePassage) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">No reading passages available for this test.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-2 h-full gap-1">
