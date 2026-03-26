@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,17 +12,103 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import {
-  ArrowLeft, Plus, Trash2, ChevronRight, ClipboardPaste, Wand2,
-  Settings, Clock, BookOpen, AlignLeft, Tag, List, Save, Copy, Check,
-  Search, X
+  ArrowLeft, Plus, Trash2, ChevronRight, Wand2,
+  Settings, Clock, BookOpen, AlignLeft, List, Copy, Check,
+  Search, X, ChevronsUpDown, CheckCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { useToast } from '@/hooks/use-toast';
 import type { Question } from '@/types';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Dropdown data ────────────────────────────────────────────────────────────
+
+const VERTICALS = ['k12', 'skills'];
+
+const PROGRAMS = [
+  'HSC 27 অনলাইন ব্যাচ - ইকোনমিক্স',
+  'HSC 27 অনলাইন ব্যাচ - জিওগ্রাফি',
+  'HSC 27 অনলাইন ব্যাচ - একাউন্টিং',
+  'HSC 27 অনলাইন ব্যাচ - ফাইন্যান্স',
+  'HSC 27 অনলাইন ব্যাচ - বায়োলজি',
+  'HSC 27 অনলাইন ব্যাচ - ম্যাথ',
+  'HSC 27 অনলাইন ব্যাচ - কেমিস্ট্রি',
+  'HSC 27 অনলাইন ব্যাচ - ফিজিক্স',
+  'HSC 27 অনলাইন ব্যাচ - ICT',
+  'HSC 27 অনলাইন ব্যাচ - ইংরেজি',
+  'HSC 27 অনলাইন ব্যাচ - বাংলা',
+  'HSC 26 অনলাইন ব্যাচ - ম্যাথ',
+  'HSC 26 অনলাইন ব্যাচ - কেমিস্ট্রি',
+  'HSC 26 অনলাইন ব্যাচ - ফিজিক্স',
+  'HSC 26 অনলাইন ব্যাচ - বায়োলজি',
+  'HSC 26 অনলাইন ব্যাচ - ICT 2.0',
+  'HSC 26 অনলাইন ব্যাচ - ইংরেজি 2.0',
+  'HSC 26 অনলাইন ব্যাচ - বাংলা 2.0',
+  '১০ম শ্রেণি - অনলাইন ব্যাচ ২০২৫ (বিজ্ঞান বিভাগ) + টেস্ট পরীক্ষার প্রস্তুতি [SSC 2026 ব্যাচ]',
+  '৯ম শ্রেণি - অনলাইন ব্যাচ + বার্ষিক পরীক্ষার প্রস্তুতি ২০২৫',
+  '৮ম শ্রেণি - অনলাইন ব্যাচ + বার্ষিক পরীক্ষার প্রস্তুতি ২০২৫',
+  '৭ম শ্রেণি - অনলাইন ব্যাচ + বার্ষিক পরীক্ষার প্রস্তুতি ২০২৫',
+  '৬ষ্ঠ শ্রেণি - অনলাইন ব্যাচ + বার্ষিক পরীক্ষার প্রস্তুতি ২০২৫',
+  'ভার্সিটি A Unit + গুচ্ছ এডমিশন কোর্স - ২০২৫',
+  'ভার্সিটি B Unit + গুচ্ছ এডমিশন কোর্স - ২০২৫',
+  'ভার্সিটি C Unit + গুচ্ছ এডমিশন কোর্স - ২০২৫',
+  'HSC 26 শেষ মুহূর্তের প্রস্তুতি কোর্স [বিজ্ঞান বিভাগ]',
+  'HSC 26 শেষ মুহূর্তের প্রস্তুতি কোর্স [মানবিক বিভাগ]',
+  'HSC 26 শেষ মুহূর্তের প্রস্তুতি কোর্স [ব্যবসায় শিক্ষা বিভাগ]',
+  'HSC 26 শেষ মুহূর্তের প্রস্তুতি কোর্স [বাংলা, ইংরেজি, ICT]',
+  'SSC 2026 শেষ মুহূর্তের প্রস্তুতি কোর্স [বিজ্ঞান বিভাগ]',
+  'SSC 2026 Shesh Muhurter Prostuti Course [Humanities]',
+  'SSC 2026 Shesh Muhurter Prostuti Course [Business Studies]',
+  'ষষ্ঠ শ্রেণি - অনলাইন ব্যাচ ২০২৬',
+  'সপ্তম শ্রেণি - অনলাইন ব্যাচ ২০২৬',
+  'অষ্টম শ্রেণি - অনলাইন ব্যাচ ২০২৬',
+  'নবম শ্রেণি - অনলাইন ব্যাচ ২০২৬ [বিজ্ঞান বিভাগ - SSC 28]',
+  'নবম শ্রেণি - অনলাইন ব্যাচ ২০২৬ [ব্যবসায় শিক্ষা ও মানবিক বিভাগ - SSC 28]',
+  'নবম শ্রেণি - বাংলা, ইংরেজি ও আইসিটি অনলাইন ব্যাচ ২০২৬ [সকল বিভাগ - SSC 2028]',
+  'দশম শ্রেণি - অনলাইন ব্যাচ ২০২৬ [বিজ্ঞান বিভাগ - SSC 27]',
+  'দশম শ্রেণি - বাংলা, ইংরেজি ও আইসিটি অনলাইন ব্যাচ ২০২৬ [সকল বিভাগ - SSC 2027]',
+  'Class 5 Super Course | 2026',
+  'Class 6 Super Course | 2026',
+  'Class 7 Super Course | 2026',
+  'Class 8 Super Course | 2026',
+  'SSC 28 | Class 9 Super Course',
+  'SSC 27 | Class 10 Super Course',
+  'SSC 26 | Super Course',
+];
+
+const SUBJECTS = [
+  'Science', 'Math', 'English', 'General Math', 'Physics', 'Chemistry',
+  'Biology', 'Higher Math', 'Business Entrepreneurship', 'Accounting',
+  'Finance & Banking', 'Economics', 'Civics and Citizenship',
+  'History of Bangladesh & World Civilization', 'GK National', 'GK International',
+  'ICT', 'Bangla', 'BGS', 'Ethics & Governance', 'Geography',
+  'Mental Ability', 'Marketing', 'Social Work', 'Logic',
+];
+
+const CLASSES = [
+  'Class 01', 'Class 02', 'Class 03', 'Class 04', 'Class 05', 'Class 06',
+  'Class 07', 'Class 08', 'Class 09', 'Class 10', 'Class 11', 'Class 12',
+  'Class 9 - 10', 'Class 11 - 12',
+];
+
+const PAPERS = ['1st Paper', '2nd Paper'];
+
+const CHAPTERS = Array.from({ length: 30 }, (_, i) => `Chapter ${i + 1}`);
+
+const EXAM_SETS = [
+  ...Array.from({ length: 20 }, (_, i) => `Exam Set ${i + 1}`),
+  'Model Test',
+  'Monthly Test',
+  'Weekly Test 01',
+  'Weekly Test 02',
+  'Weekly Test 03',
+  'Weekly Test 04',
+];
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type ExamServiceConfig = {
   id: string;
@@ -61,10 +147,6 @@ type ExamServiceConfig = {
   // Instruction
   instructions: string;
   termsAndConditions: string;
-  // SEO
-  seoTitle: string;
-  seoDescription: string;
-  seoSlug: string;
   // Composition — IDs of selected questions
   selectedQuestionIds: string[];
   // Attribute fingerprint used to filter
@@ -85,13 +167,12 @@ const TABS = [
   { id: 'time',        label: 'Time',        icon: Clock },
   { id: 'question',    label: 'Question',    icon: BookOpen },
   { id: 'instruction', label: 'Instruction', icon: AlignLeft },
-  { id: 'seo',         label: 'SEO Meta',    icon: Tag },
   { id: 'composition', label: 'Composition', icon: List },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
 
-// ─── Factory ─────────────────────────────────────────────────────────────────
+// ─── Factory ──────────────────────────────────────────────────────────────────
 
 function defaultExam(): ExamServiceConfig {
   return {
@@ -126,15 +207,74 @@ function defaultExam(): ExamServiceConfig {
     showQuestionNumbers: true,
     instructions: '',
     termsAndConditions: '',
-    seoTitle: '',
-    seoDescription: '',
-    seoSlug: '',
     selectedQuestionIds: [],
     attributeSet: null,
   };
 }
 
-// ─── Helper sub-components ───────────────────────────────────────────────────
+// ─── SearchableSelect ─────────────────────────────────────────────────────────
+
+function SearchableSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="flex h-9 w-full items-center justify-between rounded-xl border border-input bg-background px-3 py-2 text-xs shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span className={value ? 'font-medium' : 'text-muted-foreground'}>
+            {value || placeholder || 'Select...'}
+          </span>
+          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search..." className="h-8 text-xs" />
+          <CommandList>
+            <CommandEmpty className="py-4 text-center text-[10px] text-muted-foreground">No results found.</CommandEmpty>
+            <CommandGroup>
+              {value && (
+                <CommandItem
+                  value="__clear__"
+                  onSelect={() => { onChange(''); setOpen(false); }}
+                  className="text-xs text-muted-foreground italic"
+                >
+                  <X className="mr-2 h-3 w-3" /> Clear selection
+                </CommandItem>
+              )}
+              {options.map(opt => (
+                <CommandItem
+                  key={opt}
+                  value={opt}
+                  onSelect={() => { onChange(opt); setOpen(false); }}
+                  className="text-xs"
+                >
+                  <Check className={`mr-2 h-3 w-3 ${value === opt ? 'opacity-100' : 'opacity-0'}`} />
+                  {opt}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// ─── Helper sub-components ────────────────────────────────────────────────────
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
   <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4 mt-6 first:mt-0">
@@ -173,7 +313,7 @@ const CheckField = ({
   </div>
 );
 
-// ─── Main component ──────────────────────────────────────────────────────────
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function McqExamServicePage() {
   const [exams, setExams] = useLocalStorage<ExamServiceConfig[]>('examServiceMcq', []);
@@ -249,6 +389,24 @@ export default function McqExamServicePage() {
     });
   };
 
+  const selectAllFiltered = () => {
+    if (!activeExam) return;
+    const newIds = filteredQuestions.map(q => q.id);
+    const merged = Array.from(new Set([...activeExam.selectedQuestionIds, ...newIds]));
+    update({ selectedQuestionIds: merged });
+  };
+
+  const deselectAllFiltered = () => {
+    if (!activeExam) return;
+    const filteredIds = new Set(filteredQuestions.map(q => q.id));
+    update({ selectedQuestionIds: activeExam.selectedQuestionIds.filter(id => !filteredIds.has(id)) });
+  };
+
+  const allFilteredSelected = useMemo(() => {
+    if (!activeExam || filteredQuestions.length === 0) return false;
+    return filteredQuestions.every(q => activeExam.selectedQuestionIds.includes(q.id));
+  }, [filteredQuestions, activeExam]);
+
   const applyAttributeSet = () => {
     setAttrParseError('');
     try {
@@ -273,7 +431,7 @@ export default function McqExamServicePage() {
     toast({ title: 'Exam config copied to clipboard.' });
   };
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
+  // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex-1 flex flex-col gap-0 h-full">
@@ -426,31 +584,63 @@ export default function McqExamServicePage() {
 
                     <SectionTitle>Attribute Classification</SectionTitle>
                     <div className="grid grid-cols-2 gap-4">
-                      {[
-                        ['vertical', 'Vertical'],
-                        ['program', 'Program'],
-                        ['subject', 'Subject'],
-                        ['class', 'Class'],
-                        ['paper', 'Paper'],
-                        ['chapter', 'Chapter'],
-                        ['examSet', 'Exam Set'],
-                      ].map(([key, lbl]) => (
-                        <Field key={key} label={lbl}>
-                          <Input
-                            value={(activeExam as unknown as Record<string, string>)[key] || ''}
-                            onChange={e => update({ [key]: e.target.value } as Partial<ExamServiceConfig>)}
-                            placeholder={lbl}
-                            className="rounded-xl"
-                          />
-                        </Field>
-                      ))}
+                      <Field label="Vertical">
+                        <SearchableSelect
+                          value={activeExam.vertical}
+                          onChange={v => update({ vertical: v })}
+                          options={VERTICALS}
+                          placeholder="Select vertical"
+                        />
+                      </Field>
+                      <Field label="Subject">
+                        <SearchableSelect
+                          value={activeExam.subject}
+                          onChange={v => update({ subject: v })}
+                          options={SUBJECTS}
+                          placeholder="Select subject"
+                        />
+                      </Field>
+                      <Field label="Class">
+                        <SearchableSelect
+                          value={activeExam.class}
+                          onChange={v => update({ class: v })}
+                          options={CLASSES}
+                          placeholder="Select class"
+                        />
+                      </Field>
+                      <Field label="Paper">
+                        <SearchableSelect
+                          value={activeExam.paper}
+                          onChange={v => update({ paper: v })}
+                          options={PAPERS}
+                          placeholder="Select paper"
+                        />
+                      </Field>
+                      <Field label="Chapter">
+                        <SearchableSelect
+                          value={activeExam.chapter}
+                          onChange={v => update({ chapter: v })}
+                          options={CHAPTERS}
+                          placeholder="Select chapter"
+                        />
+                      </Field>
+                      <Field label="Exam Set">
+                        <SearchableSelect
+                          value={activeExam.examSet}
+                          onChange={v => update({ examSet: v })}
+                          options={EXAM_SETS}
+                          placeholder="Select exam set"
+                        />
+                      </Field>
                     </div>
-
-                    <div className="flex justify-end pt-2">
-                      <Button onClick={() => update({ title: activeExam.title })} className="h-9 px-6 rounded-xl font-bold text-xs uppercase gap-2">
-                        <Save className="h-3.5 w-3.5" /> Save Changes
-                      </Button>
-                    </div>
+                    <Field label="Program">
+                      <SearchableSelect
+                        value={activeExam.program}
+                        onChange={v => update({ program: v })}
+                        options={PROGRAMS}
+                        placeholder="Select program"
+                      />
+                    </Field>
                   </>
                 )}
 
@@ -585,28 +775,6 @@ export default function McqExamServicePage() {
                   </>
                 )}
 
-                {/* ── SEO ── */}
-                {activeTab === 'seo' && (
-                  <>
-                    <SectionTitle>SEO &amp; Discovery</SectionTitle>
-                    <Field label="SEO Title">
-                      <Input value={activeExam.seoTitle} onChange={e => update({ seoTitle: e.target.value })} placeholder="Exam title for search engines" className="rounded-xl" />
-                    </Field>
-                    <Field label="Meta Description">
-                      <Textarea
-                        value={activeExam.seoDescription}
-                        onChange={e => update({ seoDescription: e.target.value })}
-                        placeholder="Brief description (150–160 characters)"
-                        rows={3}
-                        className="rounded-xl resize-none"
-                      />
-                    </Field>
-                    <Field label="URL Slug">
-                      <Input value={activeExam.seoSlug} onChange={e => update({ seoSlug: e.target.value })} placeholder="e.g. ssc-physics-model-test-2025" className="rounded-xl" />
-                    </Field>
-                  </>
-                )}
-
                 {/* ── COMPOSITION ── */}
                 {activeTab === 'composition' && (
                   <>
@@ -656,10 +824,23 @@ export default function McqExamServicePage() {
                       </CardContent>
                     </Card>
 
-                    <SectionTitle>
-                      Question Pool ({filteredQuestions.length} matching
-                      {activeExam.attributeSet ? ' fingerprint' : ' — all questions'})
-                    </SectionTitle>
+                    <div className="flex items-center justify-between">
+                      <SectionTitle>
+                        Question Pool ({filteredQuestions.length} matching
+                        {activeExam.attributeSet ? ' fingerprint' : ' — all questions'})
+                      </SectionTitle>
+                      {filteredQuestions.length > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={allFilteredSelected ? deselectAllFiltered : selectAllFiltered}
+                          className="h-7 px-3 rounded-lg text-[10px] font-bold uppercase gap-1.5 mb-4 shrink-0"
+                        >
+                          <CheckCheck className="h-3 w-3" />
+                          {allFilteredSelected ? 'Deselect All' : 'Select All'}
+                        </Button>
+                      )}
+                    </div>
 
                     <div className="relative mb-3">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
