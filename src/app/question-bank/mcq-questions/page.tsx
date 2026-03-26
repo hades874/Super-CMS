@@ -354,7 +354,7 @@ export default function McqQuestionsPage() {
            <Card className="border shadow-sm rounded-2xl flex-1 overflow-hidden min-h-0 flex flex-col">
               <ScrollArea className="flex-1">
                  <Table>
-                    <TableHeader className="bg-muted/30 sticky top-0 bg-background z-20">
+                    <TableHeader className="sticky top-0 bg-background z-20">
                        <TableRow className="hover:bg-transparent border-b">
                           <TableHead className="w-12 px-6"><Checkbox checked={isAllVisibleSelected} onCheckedChange={handleSelectAllVisible} /></TableHead>
                           <TableHead className="text-[10px] font-black uppercase tracking-widest py-4">Question Content</TableHead>

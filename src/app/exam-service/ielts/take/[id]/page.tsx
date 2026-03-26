@@ -464,7 +464,7 @@ export default function IeltsExamPlayer() {
             <div className="space-y-8">
               {activeSection === 'Writing' ? (
                 <div className="space-y-6">
-                   <div className="flex items-center justify-between items-center mb-2 px-2">
+                   <div className="flex items-center justify-between mb-2 px-2">
                        <Label className="text-[12px] font-black uppercase tracking-[0.4em] text-primary">Operational Payload Response</Label>
                        <span className="text-[11px] font-black text-muted-foreground/40 uppercase tracking-widest">{writingContent[currentQuestion.id]?.split(/\s+/).filter(x => x).length || 0} WORDS</span>
                    </div>

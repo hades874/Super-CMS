@@ -110,7 +110,7 @@ export const attributeValueMap: { [key: string]: { [key: string]: string } } = {
 export function decodeAttributes(row: any): { [key: string]: string | undefined } {
     const decoded: { [key: string]: string | undefined } = {};
 
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 7; i++) {
         const idKey = `attributes_${i}_id`;
         const valueKey = `attributes_${i}_value`;
 
@@ -127,4 +127,31 @@ export function decodeAttributes(row: any): { [key: string]: string | undefined 
         }
     }
     return decoded;
+}
+
+/**
+ * Detects the common attribute set from a list of parsed questions.
+ * Returns a Record<attributeName, humanReadableValue> representing
+ * the fingerprint shared by all questions in the set.
+ */
+export function detectAttributeSet(questions: { [key: string]: any }[]): Record<string, string> {
+    if (!questions.length) return {};
+    const first = questions[0];
+    const keys = ['subject', 'class', 'program', 'paper', 'chapter', 'exam_set', 'difficulty', 'topic', 'vertical', 'board'];
+    const result: Record<string, string> = {};
+    for (const key of keys) {
+        const val = first[key];
+        if (!val) continue;
+        const valStr = Array.isArray(val) ? val[0] : String(val);
+        if (!valStr) continue;
+        // Only include if this value is consistent across all questions
+        const allMatch = questions.every(q => {
+            const qv = q[key];
+            if (!qv) return false;
+            const qvStr = Array.isArray(qv) ? qv[0] : String(qv);
+            return qvStr === valStr;
+        });
+        if (allMatch) result[key] = valStr;
+    }
+    return result;
 }

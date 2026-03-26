@@ -13,8 +13,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { decodeAttributes } from '@/data/attribute-mapping';
-import { CheckCircle, XCircle, PlusCircle, GitMerge, Download, Upload, Database, Layers, Info, ArrowLeft, ArrowRight } from 'lucide-react';
+import { decodeAttributes, detectAttributeSet } from '@/data/attribute-mapping';
+import { CheckCircle, XCircle, PlusCircle, GitMerge, Download, Upload, Database, Layers, Info, ArrowLeft, ArrowRight, Copy, Fingerprint } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
@@ -52,6 +52,7 @@ export default function BulkUploadPage() {
   const [duplicateQuestions, setDuplicateQuestions] = useState<DuplicateQuestionInfo[]>([]);
   const [selectedNew, setSelectedNew] = useState<number[]>([]);
   const [selectedDuplicatesForMerge, setSelectedDuplicatesForMerge] = useState<string[]>([]);
+  const [detectedAttributeSet, setDetectedAttributeSet] = useState<Record<string, string> | null>(null);
   
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,6 +80,7 @@ export default function BulkUploadPage() {
     setDuplicateQuestions([]);
     setSelectedNew([]);
     setSelectedDuplicatesForMerge([]);
+    setDetectedAttributeSet(null);
     setManualTopic('');
     setManualBoardName('');
     setManualBoardType('');
@@ -197,6 +199,11 @@ export default function BulkUploadPage() {
           setDuplicateQuestions(parsedDuplicates);
           setSelectedNew(parsedNew.map((_, index) => index));
           setSelectedDuplicatesForMerge(parsedDuplicates.map(d => d.existingQuestion.id));
+
+          const allParsed = [...parsedNew, ...parsedDuplicates.map(d => d.newQuestionData)];
+          if (allParsed.length > 0) {
+            setDetectedAttributeSet(detectAttributeSet(allParsed));
+          }
 
           toast({ title: 'System Analysis Complete', description: `Parsed ${parsedNew.length} new signals and ${parsedDuplicates.length} overlaps.` });
         } catch (error) {
@@ -406,6 +413,41 @@ export default function BulkUploadPage() {
            </Card>
         </div>
       </div>
+
+      {detectedAttributeSet && Object.keys(detectedAttributeSet).length > 0 && (
+        <Card className="border shadow-sm rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300 bg-primary/[0.02] border-primary/20">
+          <CardHeader className="py-4 px-6 flex flex-row items-center justify-between border-b border-primary/10">
+            <div className="flex items-center gap-3">
+              <Fingerprint className="h-4 w-4 text-primary" />
+              <div>
+                <CardTitle className="text-xs font-black uppercase tracking-widest text-primary">Attribute Fingerprint Detected</CardTitle>
+                <CardDescription className="text-[10px] font-medium mt-0.5">Copy this set and paste it in Exam Service to instantly pull these questions.</CardDescription>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="h-9 px-5 rounded-xl font-black text-[10px] uppercase tracking-widest gap-2"
+              onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify(detectedAttributeSet, null, 2));
+                toast({ title: 'Attribute Set Copied', description: 'Paste it in the Exam Service → Exam Question tab.' });
+              }}
+            >
+              <Copy className="h-3.5 w-3.5" /> Copy for Exam Service
+            </Button>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(detectedAttributeSet).map(([key, value]) => (
+                <div key={key} className="flex items-center gap-2 bg-background border border-primary/20 rounded-xl px-3 py-2 shadow-sm">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{key}</span>
+                  <span className="h-3 w-px bg-muted-foreground/20" />
+                  <span className="text-[11px] font-bold text-foreground">{value}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {hasPreview && (
         <Card className="border shadow-lg rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
