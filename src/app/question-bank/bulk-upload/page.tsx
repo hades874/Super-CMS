@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { decodeAttributes, detectAttributeSet } from '@/data/attribute-mapping';
-import { CheckCircle, XCircle, PlusCircle, GitMerge, Download, Upload, Database, Layers, Info, ArrowLeft, ArrowRight, Copy, Fingerprint } from 'lucide-react';
+import { CheckCircle, XCircle, PlusCircle, GitMerge, Download, Upload, Database, Layers, Info, ArrowLeft, ArrowRight, Copy, Fingerprint, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
@@ -108,6 +108,20 @@ export default function BulkUploadPage() {
           const parsedNew: ParsedQuestion[] = [];
           const parsedDuplicates: DuplicateQuestionInfo[] = [];
           const isFillBlanksFormat = results.meta.fields?.includes('meta:type');
+
+          // Schema validation — detect if the CSV uses the expected column structure
+          const fields = results.meta.fields ?? [];
+          const hasTitleCol = fields.includes('title');
+          const hasFillBlanksCol = fields.includes('meta:type') || fields.includes('q:text');
+          if (results.data.length > 0 && !hasTitleCol && !hasFillBlanksCol) {
+            toast({
+              variant: 'destructive',
+              title: 'Schema Mismatch',
+              description: `Expected a "title" column but found: ${fields.slice(0, 5).join(', ')}${fields.length > 5 ? '…' : ''}. Download the CSV template to see the required format.`,
+            });
+            setIsParsing(false);
+            return;
+          }
 
           results.data.forEach((row: any) => {
             let questionText: string;
@@ -205,7 +219,15 @@ export default function BulkUploadPage() {
             setDetectedAttributeSet(detectAttributeSet(allParsed));
           }
 
-          toast({ title: 'System Analysis Complete', description: `Parsed ${parsedNew.length} new signals and ${parsedDuplicates.length} overlaps.` });
+          if (parsedNew.length === 0 && parsedDuplicates.length === 0) {
+            toast({
+              variant: 'destructive',
+              title: 'No Questions Found',
+              description: 'The file was parsed but all rows were skipped — check that the "title" column has content and option columns are present.',
+            });
+          } else {
+            toast({ title: 'System Analysis Complete', description: `Parsed ${parsedNew.length} new signals and ${parsedDuplicates.length} overlaps.` });
+          }
         } catch (error) {
            toast({ variant: 'destructive', title: 'Data Corruption Detected', description: `Schema mismatch or parsing error. ${error instanceof Error ? error.message : ''}` });
         } finally {
@@ -223,6 +245,53 @@ export default function BulkUploadPage() {
     if (textData) parseData(textData);
     else if (file) parseData(file);
     else toast({ variant: 'destructive', title: 'Vacuum Input', description: 'Please provide a content stream.' });
+  };
+
+  const downloadTemplate = () => {
+    const headers = [
+      'title',
+      'type',
+      'explanation',
+      'marks',
+      'image',
+      'options_1_answer', 'options_1_is_correct',
+      'options_2_answer', 'options_2_is_correct',
+      'options_3_answer', 'options_3_is_correct',
+      'options_4_answer', 'options_4_is_correct',
+      'attributes_1_id', 'attributes_1_value',
+      'attributes_2_id', 'attributes_2_value',
+      'attributes_3_id', 'attributes_3_value',
+      'attributes_4_id', 'attributes_4_value',
+      'attributes_5_id', 'attributes_5_value',
+      'attributes_6_id', 'attributes_6_value',
+      'attributes_7_id', 'attributes_7_value',
+    ];
+    const sampleRow = [
+      'Who invented the telephone?',
+      'm1',
+      'Alexander Graham Bell invented the telephone in 1876.',
+      '1',
+      '',
+      'Alexander Graham Bell', '1',
+      'Thomas Edison', '0',
+      'Nikola Tesla', '0',
+      'James Watt', '0',
+      '2', '5',   // subject → Math/Science etc (see attribute-mapping.ts)
+      '3', '26',  // class → Class 9-10
+      '1', '2',   // difficulty → Medium
+      '', '',
+      '', '',
+      '', '',
+      '', '',
+    ];
+    const csv = [headers.join(','), sampleRow.join(',')].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mcq_upload_template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleImportToBank = () => {
@@ -356,14 +425,22 @@ export default function BulkUploadPage() {
               </CardContent>
            </Card>
 
-           <div className="p-5 bg-muted/30 rounded-2xl border border-dashed border-muted-foreground/20">
+           <div className="p-5 bg-muted/30 rounded-2xl border border-dashed border-muted-foreground/20 space-y-4">
               <div className="flex items-start gap-3">
                  <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
-                 <div className="space-y-2">
+                 <div className="space-y-1">
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Schema Blueprint</p>
-                    <p className="text-[11px] font-medium leading-relaxed text-muted-foreground/80">Support for CSV/JSON formats with specific header mapping for text, options, and metadata.</p>
+                    <p className="text-[11px] font-medium leading-relaxed text-muted-foreground/80">CSV must contain a <code className="font-mono bg-muted px-1 rounded text-[10px]">title</code> column plus option and attribute columns.</p>
                  </div>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={downloadTemplate}
+                className="w-full h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest gap-2 border-dashed"
+              >
+                <Download className="h-3.5 w-3.5" /> Download CSV Template
+              </Button>
            </div>
         </div>
         <div className="lg:col-span-2">
