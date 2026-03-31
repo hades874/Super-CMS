@@ -18,6 +18,7 @@ export interface RawClassRow {
   'Caption'?: string;
   'Content Developer'?: string;
   'Remarks'?: string;
+  'Joining URL'?: string;
   [key: string]: string | undefined;
 }
 
@@ -43,10 +44,11 @@ export interface ParsedClass {
   caption: string;
   contentDeveloper: string;
   remarks: string;
+  joiningUrl?: string;
   isMultiDirectional: boolean;
   createdAt: string;
-  
-  // New fields for extended editing
+
+  // Extended editing fields
   classType?: string;
   description?: string;
   previewUrl?: string;
@@ -60,5 +62,6 @@ export interface ParsedClass {
     program: string;
     course: string;
     subject: string;
+    class?: string;
   }>;
 }

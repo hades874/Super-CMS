@@ -88,6 +88,20 @@ export function parseClassData(rawText: string): ParsedClass[] {
     }
 
     const date = getField(row, ['Class Date', 'ClassDate', 'class_date', 'Date']);
+    const course = getField(row, ['Course', 'course']);
+    const subject = getField(row, ['Subject', 'subject']);
+    const joiningUrl = getField(row, ['Joining URL', 'JoiningURL', 'joining_url', 'Join URL', 'Join Link']);
+
+    // Build one mapping per program so multi-directional classes show all programs in edit
+    const mappings = programList.length > 0
+      ? programList.map(p => ({
+          type: 'k12',
+          program: p,
+          course,
+          subject,
+          class: '',
+        }))
+      : [{ type: 'k12', program: '', course, subject, class: '' }];
 
     parsed.push({
       id: `cls-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
@@ -99,8 +113,8 @@ export function parseClassData(rawText: string): ParsedClass[] {
       endTime:          endTime,
       classTime:        rawClassTime,
       programs:         programList,
-      course:           getField(row, ['Course', 'course']),
-      subject:          getField(row, ['Subject', 'subject']),
+      course,
+      subject,
       chapter:          getField(row, ['Chapter', 'chapter']),
       topic:            getField(row, ['Topic', 'topic']),
       teacher1:         getField(row, ['Teacher 1', 'Teacher1', 'teacher_1']),
@@ -111,6 +125,7 @@ export function parseClassData(rawText: string): ParsedClass[] {
       caption:          getField(row, ['Caption', 'caption']),
       contentDeveloper: getField(row, ['Content Developer', 'ContentDeveloper', 'content_developer']),
       remarks:          getField(row, ['Remarks', 'remarks', 'Notes']),
+      joiningUrl:       joiningUrl || undefined,
       isMultiDirectional: programList.length > 1,
       createdAt:        new Date().toISOString(),
 
@@ -120,12 +135,7 @@ export function parseClassData(rawText: string): ParsedClass[] {
       classDiscussion: true,
       status: 'Private',
       generateTranscription: false,
-      mappings: [{
-        type: 'k12',
-        program: programList[0] || '',
-        course: getField(row, ['Course', 'course']),
-        subject: getField(row, ['Subject', 'subject']),
-      }]
+      mappings,
     });
   });
 

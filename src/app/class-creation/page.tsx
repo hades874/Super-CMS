@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { parseClassData } from '@/lib/parse-class-data';
 import { useClassCreation } from '@/context/ClassCreationContext';
 import type { ParsedClass } from '@/types/class-creation';
@@ -37,8 +37,6 @@ import {
   ArrowRight,
   ArrowLeft,
   CheckCircle,
-  Layers,
-  Users,
   Monitor,
   BookOpen,
   Trash2,
@@ -50,11 +48,40 @@ import {
   Info,
   X,
   Edit2,
+  Radio,
+  Clock,
+  History,
+  Sunrise,
 } from 'lucide-react';
 import { EditClassDialog } from '@/components/k12/EditClassDialog';
+import { startOfToday, isToday, isBefore, parseISO, isValid } from 'date-fns';
 
 type Stage = 'input' | 'preview' | 'saved';
 
+// ── Date helpers ──────────────────────────────────────────────────────────────
+function parseClassDate(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  // Try ISO format (yyyy-MM-dd) first
+  const iso = parseISO(dateStr);
+  if (isValid(iso)) return iso;
+  // Try native Date parsing as fallback
+  const d = new Date(dateStr);
+  if (isValid(d)) return d;
+  return null;
+}
+
+type ClassStatus = 'today' | 'upcoming' | 'past';
+
+function getClassStatus(cls: ParsedClass): ClassStatus {
+  const d = parseClassDate(cls.classDate);
+  if (!d) return 'upcoming'; // treat unknown dates as upcoming
+  const tod = startOfToday();
+  if (isToday(d)) return 'today';
+  if (isBefore(d, tod)) return 'past';
+  return 'upcoming';
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 export default function ClassCreationPage() {
   const { classes, addClasses, updateClass, deleteClass, clearClasses } = useClassCreation();
   const { toast } = useToast();
@@ -80,7 +107,7 @@ export default function ClassCreationPage() {
     toast({ title: `Parsed ${result.length} class${result.length !== 1 ? 'es' : ''}`, description: `${result.filter(c => c.isMultiDirectional).length} multi-directional detected.` });
   };
 
-  // ── Confirm & Save ─────────────────────────────────────────────────────────
+  // ── Save ───────────────────────────────────────────────────────────────────
   const handleSave = () => {
     addClasses(parsed);
     toast({ title: `${parsed.length} class${parsed.length !== 1 ? 'es' : ''} saved`, description: 'Classes are now available in the saved view.' });
@@ -104,28 +131,36 @@ export default function ClassCreationPage() {
     setConfirmClearOpen(false);
     setStage('input');
   };
+
   const handleUpdateClass = (updated: ParsedClass) => {
     updateClass(updated);
     toast({ title: 'Class updated successfully' });
   };
 
-  // ── Filtered saved classes ─────────────────────────────────────────────────
+  // ── Filtered + grouped classes ─────────────────────────────────────────────
   const filteredClasses = useMemo(() => {
     if (!searchTerm.trim()) return classes;
     const q = searchTerm.toLowerCase();
     return classes.filter(c =>
-      c.title.toLowerCase().includes(q) ||
-      c.course.toLowerCase().includes(q) ||
-      c.subject.toLowerCase().includes(q) ||
-      c.chapter.toLowerCase().includes(q) ||
-      c.topic.toLowerCase().includes(q) ||
+      (c.title || '').toLowerCase().includes(q) ||
+      (c.course || '').toLowerCase().includes(q) ||
+      (c.subject || '').toLowerCase().includes(q) ||
+      (c.chapter || '').toLowerCase().includes(q) ||
+      (c.topic || '').toLowerCase().includes(q) ||
       c.programs.some(p => p.toLowerCase().includes(q)) ||
-      c.classCode.toLowerCase().includes(q)
+      (c.classCode || '').toLowerCase().includes(q)
     );
   }, [classes, searchTerm]);
 
+  const todayClasses   = useMemo(() => filteredClasses.filter(c => getClassStatus(c) === 'today'),    [filteredClasses]);
+  const upcomingClasses = useMemo(() => filteredClasses.filter(c => getClassStatus(c) === 'upcoming'), [filteredClasses]);
+  const pastClasses    = useMemo(() => filteredClasses.filter(c => getClassStatus(c) === 'past'),     [filteredClasses]);
+
   // ── Stats ──────────────────────────────────────────────────────────────────
   const multiCount = parsed.filter(c => c.isMultiDirectional).length;
+
+  const todayCount    = useMemo(() => classes.filter(c => getClassStatus(c) === 'today').length,    [classes]);
+  const upcomingCount = useMemo(() => classes.filter(c => getClassStatus(c) === 'upcoming').length, [classes]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // STAGE: INPUT
@@ -133,7 +168,6 @@ export default function ClassCreationPage() {
   if (stage === 'input') {
     return (
       <div className="flex-1 flex flex-col gap-8 max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b">
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -158,7 +192,6 @@ export default function ClassCreationPage() {
         </div>
 
         <div className="grid lg:grid-cols-12 gap-6">
-          {/* Paste Area */}
           <div className="lg:col-span-8 space-y-4">
             <div className="flex items-center gap-2">
               <ClipboardPaste className="h-4 w-4 text-primary" />
@@ -176,7 +209,6 @@ export default function ClassCreationPage() {
             </div>
           </div>
 
-          {/* Side Panel */}
           <div className="lg:col-span-4 space-y-4">
             <Card className="rounded-2xl border shadow-sm overflow-hidden">
               <CardHeader className="bg-muted/10 border-b pb-4">
@@ -227,14 +259,13 @@ export default function ClassCreationPage() {
               </CardContent>
             </Card>
 
-            {/* Expected columns reference */}
             <Card className="rounded-2xl border shadow-sm">
               <CardHeader className="pb-3 pt-4 px-5">
                 <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Expected Columns</CardTitle>
               </CardHeader>
               <CardContent className="px-5 pb-4">
                 <div className="flex flex-wrap gap-1.5">
-                  {['Class Code', 'Month', 'Class Date', 'Start Time', 'Class Time', 'Program', 'Course', 'Subject', 'Chapter', 'Topic', 'Teacher 1', 'Teacher 2/DS 1', 'Teacher 3/DS 2', 'Platform', 'Title', 'Caption', 'Content Developer', 'Remarks'].map(col => (
+                  {['Class Code', 'Month', 'Class Date', 'Start Time', 'Class Time', 'Program', 'Course', 'Subject', 'Chapter', 'Topic', 'Teacher 1', 'Teacher 2/DS 1', 'Teacher 3/DS 2', 'Platform', 'Title', 'Caption', 'Content Developer', 'Remarks', 'Joining URL'].map(col => (
                     <Badge key={col} variant="secondary" className="text-[9px] font-bold py-0 px-1.5 rounded-md">{col}</Badge>
                   ))}
                 </div>
@@ -252,7 +283,6 @@ export default function ClassCreationPage() {
   if (stage === 'preview') {
     return (
       <div className="flex-1 flex flex-col gap-6 max-w-6xl mx-auto w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" className="rounded-xl border" onClick={() => setStage('input')}>
@@ -265,16 +295,12 @@ export default function ClassCreationPage() {
               </p>
             </div>
           </div>
-          <Button
-            onClick={handleSave}
-            className="h-12 px-8 rounded-xl font-black gap-2 shadow-lg shadow-primary/20"
-          >
+          <Button onClick={handleSave} className="h-12 px-8 rounded-xl font-black gap-2 shadow-lg shadow-primary/20">
             <CheckCircle className="h-4 w-4" />
             Confirm & Save All ({parsed.length})
           </Button>
         </div>
 
-        {/* Summary Stats */}
         <div className="grid grid-cols-3 gap-4">
           <Card className="rounded-2xl border shadow-sm p-5 flex flex-col items-center justify-center text-center">
             <span className="text-3xl font-black text-primary">{parsed.length}</span>
@@ -290,7 +316,6 @@ export default function ClassCreationPage() {
           </Card>
         </div>
 
-        {/* Multi-directional info banner */}
         {multiCount > 0 && (
           <div className="flex items-start gap-3 p-4 rounded-2xl bg-violet-500/5 border border-violet-500/20">
             <GitMerge className="h-5 w-5 text-violet-600 shrink-0 mt-0.5" />
@@ -305,7 +330,6 @@ export default function ClassCreationPage() {
           </div>
         )}
 
-        {/* Preview Table */}
         <Card className="rounded-2xl border shadow-sm overflow-hidden">
           <CardHeader className="bg-muted/5 border-b pb-4">
             <CardTitle className="text-sm font-bold uppercase tracking-tight">Parsed Classes</CardTitle>
@@ -431,19 +455,19 @@ export default function ClassCreationPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="rounded-2xl border shadow-sm p-4 flex flex-col items-center justify-center text-center">
             <span className="text-2xl font-black text-primary">{classes.length}</span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">Total Classes</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">Total</span>
+          </Card>
+          <Card className="rounded-2xl border shadow-sm p-4 flex flex-col items-center justify-center text-center">
+            <span className="text-2xl font-black text-emerald-600">{todayCount}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">Today</span>
+          </Card>
+          <Card className="rounded-2xl border shadow-sm p-4 flex flex-col items-center justify-center text-center">
+            <span className="text-2xl font-black text-sky-600">{upcomingCount}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">Upcoming</span>
           </Card>
           <Card className="rounded-2xl border shadow-sm p-4 flex flex-col items-center justify-center text-center">
             <span className="text-2xl font-black text-violet-600">{classes.filter(c => c.isMultiDirectional).length}</span>
             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">Multi-Directional</span>
-          </Card>
-          <Card className="rounded-2xl border shadow-sm p-4 flex flex-col items-center justify-center text-center">
-            <span className="text-2xl font-black text-sky-600">{new Set(classes.flatMap(c => c.programs)).size}</span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">Programs</span>
-          </Card>
-          <Card className="rounded-2xl border shadow-sm p-4 flex flex-col items-center justify-center text-center">
-            <span className="text-2xl font-black text-emerald-600">{new Set(classes.map(c => c.course)).size}</span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">Courses</span>
           </Card>
         </div>
       )}
@@ -461,7 +485,7 @@ export default function ClassCreationPage() {
         </div>
       )}
 
-      {/* Classes Grid */}
+      {/* Empty state */}
       {classes.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center py-32 text-center">
           <div className="h-20 w-20 rounded-full bg-muted/30 flex items-center justify-center mb-6">
@@ -473,35 +497,96 @@ export default function ClassCreationPage() {
             <CalendarDays className="h-4 w-4" /> Get Started
           </Button>
         </div>
-      ) : filteredClasses.length === 0 ? (
-        <div className="py-20 text-center">
-          <p className="text-sm font-bold text-muted-foreground uppercase">No classes match your search.</p>
-        </div>
       ) : (
-        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredClasses.map(cls => (
-            <ClassCard 
-              key={cls.id} 
-              cls={cls} 
-              onDelete={() => setClassToDelete(cls.id)} 
-              onEdit={() => {
-                setEditingClass(cls);
-                setIsEditOpen(true);
-              }}
-            />
-          ))}
+        <div className="space-y-10">
+
+          {/* ── Today's Live Classes ──────────────────────────────── */}
+          {todayClasses.length > 0 && (
+            <section>
+              <SectionHeader
+                icon={<Sunrise className="h-4 w-4 text-emerald-600" />}
+                label="Today's Live Classes"
+                count={todayClasses.length}
+                color="emerald"
+              />
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+                {todayClasses.map(cls => (
+                  <ClassCard
+                    key={cls.id}
+                    cls={cls}
+                    status="today"
+                    onDelete={() => setClassToDelete(cls.id)}
+                    onEdit={() => { setEditingClass(cls); setIsEditOpen(true); }}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ── Upcoming ──────────────────────────────────────────── */}
+          {upcomingClasses.length > 0 && (
+            <section>
+              <SectionHeader
+                icon={<Clock className="h-4 w-4 text-sky-600" />}
+                label="Upcoming"
+                count={upcomingClasses.length}
+                color="sky"
+              />
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+                {upcomingClasses.map(cls => (
+                  <ClassCard
+                    key={cls.id}
+                    cls={cls}
+                    status="upcoming"
+                    onDelete={() => setClassToDelete(cls.id)}
+                    onEdit={() => { setEditingClass(cls); setIsEditOpen(true); }}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ── Past Live ─────────────────────────────────────────── */}
+          {pastClasses.length > 0 && (
+            <section>
+              <SectionHeader
+                icon={<History className="h-4 w-4 text-muted-foreground" />}
+                label="Past Live"
+                count={pastClasses.length}
+                color="muted"
+              />
+              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+                {pastClasses.map(cls => (
+                  <ClassCard
+                    key={cls.id}
+                    cls={cls}
+                    status="past"
+                    onDelete={() => setClassToDelete(cls.id)}
+                    onEdit={() => { setEditingClass(cls); setIsEditOpen(true); }}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* No search results */}
+          {filteredClasses.length === 0 && (
+            <div className="py-20 text-center">
+              <p className="text-sm font-bold text-muted-foreground uppercase">No classes match your search.</p>
+            </div>
+          )}
         </div>
       )}
 
       {/* Edit Dialog */}
-      <EditClassDialog 
+      <EditClassDialog
         cls={editingClass}
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
         onUpdate={handleUpdateClass}
       />
 
-      {/* Delete single confirm */}
+      {/* Delete single */}
       <AlertDialog open={!!classToDelete} onOpenChange={open => !open && setClassToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -515,12 +600,12 @@ export default function ClassCreationPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Clear all confirm */}
+      {/* Clear all */}
       <AlertDialog open={confirmClearOpen} onOpenChange={setConfirmClearOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Clear All Classes?</AlertDialogTitle>
-            <AlertDialogDescription>This will permanently delete all {classes.length} saved classes from your local repository. This cannot be undone.</AlertDialogDescription>
+            <AlertDialogDescription>This will permanently delete all {classes.length} saved classes. This cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -532,8 +617,59 @@ export default function ClassCreationPage() {
   );
 }
 
-// ── Class Card Component ──────────────────────────────────────────────────────
-function ClassCard({ cls, onDelete, onEdit }: { cls: ParsedClass; onDelete: () => void; onEdit: () => void }) {
+// ── Section header ────────────────────────────────────────────────────────────
+function SectionHeader({
+  icon,
+  label,
+  count,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  count: number;
+  color: 'emerald' | 'sky' | 'muted';
+}) {
+  const borderColor = {
+    emerald: 'border-emerald-500/30',
+    sky: 'border-sky-500/30',
+    muted: 'border-muted-foreground/20',
+  }[color];
+
+  const badgeColor = {
+    emerald: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20',
+    sky: 'bg-sky-500/10 text-sky-700 border-sky-500/20',
+    muted: 'bg-muted/30 text-muted-foreground border-muted-foreground/20',
+  }[color];
+
+  return (
+    <div className={`flex items-center gap-3 pb-3 border-b ${borderColor}`}>
+      {icon}
+      <span className="text-sm font-black uppercase tracking-widest">{label}</span>
+      <Badge variant="outline" className={`text-[10px] font-black px-2 py-0 ${badgeColor}`}>
+        {count}
+      </Badge>
+    </div>
+  );
+}
+
+// ── Class Card ────────────────────────────────────────────────────────────────
+function ClassCard({
+  cls,
+  status,
+  onDelete,
+  onEdit,
+}: {
+  cls: ParsedClass;
+  status: ClassStatus;
+  onDelete: () => void;
+  onEdit: () => void;
+}) {
+  const statusBadge = {
+    today: { label: 'Today', className: 'bg-emerald-500 text-white' },
+    upcoming: { label: 'Unscheduled', className: 'bg-muted text-muted-foreground border' },
+    past: { label: 'Past Live', className: 'bg-rose-500/10 text-rose-600 border border-rose-500/20' },
+  }[status];
+
   return (
     <Card className={`rounded-2xl border shadow-sm overflow-hidden group hover:shadow-md transition-all duration-200 ${cls.isMultiDirectional ? 'ring-2 ring-violet-500/20' : ''}`}>
       <CardContent className="p-5 space-y-4">
@@ -549,10 +685,26 @@ function ClassCard({ cls, onDelete, onEdit }: { cls: ParsedClass; onDelete: () =
                   <GitMerge className="h-2.5 w-2.5" /> MULTI
                 </Badge>
               )}
+              <Badge className={`text-[8px] h-4 px-1.5 font-black ${statusBadge.className}`}>
+                {statusBadge.label}
+              </Badge>
             </div>
             <p className="font-black text-sm leading-tight line-clamp-2">{cls.title || `${cls.subject} — ${cls.topic}`}</p>
           </div>
           <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Live button — placeholder only, visible for today/upcoming */}
+            {status !== 'past' && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-lg text-emerald-600 hover:bg-emerald-50 cursor-default"
+                title="Go Live (coming soon)"
+                type="button"
+                onClick={() => {}}
+              >
+                <Radio className="h-3.5 w-3.5" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -607,7 +759,7 @@ function ClassCard({ cls, onDelete, onEdit }: { cls: ParsedClass; onDelete: () =
         <div className="flex items-center justify-between text-[10px] text-muted-foreground font-bold">
           <div className="flex items-center gap-1.5">
             <CalendarDays className="h-3 w-3" />
-            <span>{cls.classDate || '—'} {cls.startTime ? `· ${cls.startTime}` : ''}</span>
+            <span>{cls.classDate || '—'}{cls.startTime ? ` · ${cls.startTime}` : ''}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Monitor className="h-3 w-3" />
@@ -617,7 +769,6 @@ function ClassCard({ cls, onDelete, onEdit }: { cls: ParsedClass; onDelete: () =
 
         {(cls.teacher1 || cls.teacher2) && (
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-bold">
-            <Users className="h-3 w-3 shrink-0" />
             <span className="truncate">{[cls.teacher1, cls.teacher2, cls.teacher3].filter(Boolean).join(' · ')}</span>
           </div>
         )}
